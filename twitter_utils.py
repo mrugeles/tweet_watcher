@@ -2,7 +2,7 @@ import json
 import requests
 import spacy
 from nltk.tokenize import TweetTokenizer
-
+import datetime
 
 class TwitterUtils:
 
@@ -71,7 +71,9 @@ class TwitterUtils:
         return tweet
 
     def save(self, start_time):
+        date_time_obj = datetime.datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
+        file_name = date_time_obj.strftime("%Y%m%d%H%M%S")
         records = [f"{self.get_tags(record)}\n" for record in self.records]
-        file = open(f"datasets/{start_time}.log", "w")
+        file = open(f"datasets/{file_name}.log", "w")
         file.writelines(records)
 
