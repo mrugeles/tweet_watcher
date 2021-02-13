@@ -32,7 +32,8 @@ class TwitterUtils:
         response = requests.request("GET", url, headers=self.headers, data=payload)
 
         results = json.loads(response.text.encode('utf8'))
-        self.records += results['data']
+        if "data" in results:
+            self.records += results['data']
 
         if "next_token" in results["meta"]:
             return results["meta"]['next_token'], results["meta"]["newest_id"]
