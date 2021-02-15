@@ -33,7 +33,7 @@ class TwitterUtils:
     def search(self, query, next_token, start_time):
         payload = {}
         next_token = '' if next_token is None else f'next_token={next_token}'
-        url = f'{self.search_url}{query}&max_results=100&{next_token}&start_time={start_time}&tweet.fields=created_at'
+        url = f'{self.search_url}{query}&max_results=50&{next_token}&start_time={start_time}&tweet.fields=created_at'
         response = requests.request("GET", url, headers=self.headers, data=payload)
 
         results = json.loads(response.text.encode('utf8'))
