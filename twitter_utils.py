@@ -1,8 +1,13 @@
 import json
-import requests
 import spacy
-from nltk.tokenize import TweetTokenizer
+import boto3
+import requests
 import datetime
+
+import pandas as pd
+from nltk.tokenize import TweetTokenizer
+from io import StringIO
+
 
 class TwitterUtils:
 
@@ -23,17 +28,18 @@ class TwitterUtils:
             'Authorization': f'Bearer {self.bearer_token}',
             'Cookie': 'personalization_id="v1_QkaLnYDqvHh1tWN9GAP18A=="; guest_id=v1%3A158255925665512507'
         }
-        self.records = []
+        self.records = {}
 
     def search(self, query, next_token, start_time):
         payload = {}
         next_token = '' if next_token is None else f'next_token={next_token}'
-        url = f'{self.search_url}{query}&max_results=100&{next_token}&start_time={start_time}'
+        url = f'{self.search_url}{query}&max_results=100&{next_token}&start_time={start_time}&tweet.fields=created_at'
         response = requests.request("GET", url, headers=self.headers, data=payload)
 
         results = json.loads(response.text.encode('utf8'))
         if "data" in results:
-            self.records += results['data']
+            for tweet in results['data']:
+                self.records[tweet['id']] = tweet
 
         if "next_token" in results["meta"]:
             return results["meta"]['next_token'], results["meta"]["newest_id"]
@@ -49,16 +55,16 @@ class TwitterUtils:
 
     def get_tags(self, tweet):
         tknzr = TweetTokenizer()
-        excluded_tags = ['MISC', 'PUNCT', 'ADJ', 'ADP', 'DET']
+        included_tags = ['LOC', 'PER', 'NOUN', 'VERB', 'PROPN', 'HASHTAGS', 'URLS', 'ORG']
         tags = {}
         doc = self.nlp(tweet['text'])
 
         for ent in doc.ents:
-            if ent.label_ not in excluded_tags:
+            if ent.label_ in included_tags:
                 tags = self.add_tag(tags, ent.label_, ent.text)
 
         for token in doc:
-            if token.pos_ not in excluded_tags:
+            if token.pos_ in included_tags:
                 tags = self.add_tag(tags, token.pos_, token.lemma_)
 
         tweet_tokens = [token for token in tknzr.tokenize(tweet['text']) if token[0] == '#' or 'http' in token]
@@ -70,10 +76,25 @@ class TwitterUtils:
         tweet['tags'] = tags
         return tweet
 
-    def save(self, start_time):
-        date_time_obj = datetime.datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
-        file_name = date_time_obj.strftime("%Y%m%d%H%M%S")
-        records = [f"{self.get_tags(record)}\n" for record in self.records]
-        file = open(f"datasets/{file_name}.log", "w")
-        file.writelines(records)
+    def store_tags(self, row):
+        s3_bucket = 'tweet.watcher'
+        s3_client = boto3.resource('s3')
+        tags_rows = []
+        for key in row['tags']:
+            for value in row['tags'][key]:
+                tags_rows += [(key, value, 1)]
+        df = pd.DataFrame(tags_rows, columns=['tag', 'value', 'count'])
+        df = df.groupby(['tag', 'value']).count()
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer)
+        s3_client.Object(s3_bucket, f'{row["folder"]}/{row["id"]}_tags.csv').put(Body=csv_buffer.getvalue())
 
+    def save(self, search_name):
+        tweets = [self.get_tags(self.records[key]) for key in self.records]
+        tweets_df = pd.DataFrame(tweets)
+        tweets_df['created_at'] = tweets_df['created_at'].apply(
+            lambda date: datetime.datetime.strptime(date[:16], "%Y-%m-%dT%H:%M"))
+        tweets_df['folder'] = tweets_df['created_at'].dt.strftime('%Y/%m/%d/%H')
+        tweets_df['folder'] = tweets_df['folder'].apply(lambda folder: f"{search_name}/{folder}")
+        tweets_df[['folder', 'id', 'tags']].apply(self.store_tags, axis=1)
+        tweets_df.head()

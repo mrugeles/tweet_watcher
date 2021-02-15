@@ -1,0 +1,1 @@
+(from:elespectador OR from:ELTIEMPO OR from:AP_Noticias OR from:NoticiasUno OR from:larepublica_co OR from:dw_espanol)  -is:retweet lang:es
