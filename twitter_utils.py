@@ -1,18 +1,15 @@
 import json
 import spacy
-import boto3
-import requests
 import datetime
-
+import requests
 import pandas as pd
 from nltk.tokenize import TweetTokenizer
-from io import StringIO
 
 
 class TwitterUtils:
 
     def __init__(self):
-        self.nlp = spacy.load('es_core_news_md')
+        self.nlp = spacy.load('es_core_news_lg')
 
         self.consumer_key = 'rQFLsgcmxgaAj9R3d99SrgatN'
         self.consumer_secret = '1xtoU7RG65VPrODOrS3LlC9Ud3YxSWvoulSl9ry5v85U28l6O2'
@@ -37,6 +34,7 @@ class TwitterUtils:
         response = requests.request("GET", url, headers=self.headers, data=payload)
 
         results = json.loads(response.text.encode('utf8'))
+
         if "data" in results:
             for tweet in results['data']:
                 self.records[tweet['id']] = tweet
@@ -57,25 +55,33 @@ class TwitterUtils:
         tknzr = TweetTokenizer()
         included_tags = ['LOC', 'PER', 'NOUN', 'VERB', 'PROPN', 'HASHTAGS', 'URLS', 'ORG']
         tags = {}
+        key_words = []
         doc = self.nlp(tweet['text'])
 
         for ent in doc.ents:
             if ent.label_ in included_tags:
                 tags = self.add_tag(tags, ent.label_, ent.text)
+                key_words += [ent.text]
 
         for token in doc:
             if token.pos_ in included_tags:
                 tags = self.add_tag(tags, token.pos_, token.lemma_)
+                key_words += [token.lemma_]
 
         tweet_tokens = [token for token in tknzr.tokenize(tweet['text']) if token[0] == '#' or 'http' in token]
         for token in tweet_tokens:
             if token[0] == '#':
                 tags = self.add_tag(tags, 'HASHTAGS', token)
+                key_words += [token]
             elif 'http' in token:
                 tags = self.add_tag(tags, 'URLS', token)
-        tweet['tags'] = tags
+                key_words += [token]
+        for key in tags:
+            tweet[key] = tags[key]
+        tweet['key_words'] = list(set(key_words))
         return tweet
 
+    '''
     def store_tags(self, row):
         s3_bucket = 'tweet.watcher'
         s3_client = boto3.resource('s3')
@@ -88,13 +94,12 @@ class TwitterUtils:
         csv_buffer = StringIO()
         df.to_csv(csv_buffer)
         s3_client.Object(s3_bucket, f'{row["folder"]}/{row["id"]}_tags.csv').put(Body=csv_buffer.getvalue())
+    '''
 
-    def save(self, search_name):
+    def save(self, log_path, timestamp):
         tweets = [self.get_tags(self.records[key]) for key in self.records]
         tweets_df = pd.DataFrame(tweets)
         tweets_df['created_at'] = tweets_df['created_at'].apply(
             lambda date: datetime.datetime.strptime(date[:16], "%Y-%m-%dT%H:%M"))
         tweets_df['folder'] = tweets_df['created_at'].dt.strftime('%Y/%m/%d/%H')
-        tweets_df['folder'] = tweets_df['folder'].apply(lambda folder: f"{search_name}/{folder}")
-        tweets_df[['folder', 'id', 'tags']].apply(self.store_tags, axis=1)
-        tweets_df.head()
+        tweets_df.to_json(f"{log_path}/{timestamp}.json", orient='records')
