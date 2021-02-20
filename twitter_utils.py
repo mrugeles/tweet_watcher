@@ -9,7 +9,7 @@ from nltk.tokenize import TweetTokenizer
 class TwitterUtils:
 
     def __init__(self):
-        self.nlp = spacy.load('es_core_news_lg')
+        self.nlp = spacy.load('es_core_news_md')
 
         self.consumer_key = 'rQFLsgcmxgaAj9R3d99SrgatN'
         self.consumer_secret = '1xtoU7RG65VPrODOrS3LlC9Ud3YxSWvoulSl9ry5v85U28l6O2'
