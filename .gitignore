@@ -3,3 +3,4 @@ backup/**
 datasets/**
 __pycache__/**
 logs/**
+*.pem

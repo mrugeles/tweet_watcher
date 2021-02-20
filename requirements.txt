@@ -1,4 +1,6 @@
-spacy==2.3.5
-tqdm==4.54.1
-requests==2.22.0
 nltk==3.4.5
+requests==2.22.0
+pyspark==3.0.1
+tqdm==4.54.1
+pandas==1.0.5
+spacy==2.3.5
