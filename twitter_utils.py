@@ -102,6 +102,9 @@ class TwitterUtils:
         tweets_df['created_at'] = tweets_df['created_at'].apply(
             lambda date: datetime.datetime.strptime(date[:16], "%Y-%m-%dT%H:%M"))
         tweets_df['folder'] = tweets_df['created_at'].dt.strftime('%Y/%m/%d/%H')
-        outfile = open(f"{log_path}/{timestamp}.json", 'wb')
-        tweets_df.to_json(f"{log_path}/{timestamp}.json", orient='records')
-        outfile.close()
+
+        parsed_data = json.loads(tweets_df.to_json(orient='records'))
+        parsed_data = [f"{record}\n" for record in parsed_data]
+        with open(f"{log_path}/{timestamp}.json", 'w') as outfile:
+            outfile.writelines(parsed_data)
+
