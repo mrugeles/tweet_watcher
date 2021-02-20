@@ -78,6 +78,7 @@ class TwitterUtils:
         for key in tags:
             tweet[key] = tags[key]
         tweet['key_words'] = list(set(key_words))
+
         return tweet
 
     '''
@@ -101,4 +102,6 @@ class TwitterUtils:
         tweets_df['created_at'] = tweets_df['created_at'].apply(
             lambda date: datetime.datetime.strptime(date[:16], "%Y-%m-%dT%H:%M"))
         tweets_df['folder'] = tweets_df['created_at'].dt.strftime('%Y/%m/%d/%H')
+        outfile = open(f"{log_path}/{timestamp}.json", 'wb')
         tweets_df.to_json(f"{log_path}/{timestamp}.json", orient='records')
+        outfile.close()
