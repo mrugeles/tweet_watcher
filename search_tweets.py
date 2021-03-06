@@ -31,6 +31,6 @@ if __name__ == '__main__':
             next_token, newest_id = result
         time.sleep(5)
 
-    twitterUtils.save(log_path, timestamp_long)
+    twitterUtils.save(log_path, timestamp_twitter)
     end = time.time()
     print(f"Elapsed time {(end-start)/60} mins.")

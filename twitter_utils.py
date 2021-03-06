@@ -101,8 +101,7 @@ class TwitterUtils:
         tweets_df = pd.DataFrame(tweets)
         tweets_df['created_at'] = tweets_df['created_at'].apply(
             lambda date: datetime.datetime.strptime(date[:16], "%Y-%m-%dT%H:%M"))
-        tweets_df['folder'] = tweets_df['created_at'].dt.strftime('%Y/%m/%d/%H')
-        tweets_df['timestamp'] = tweets_df['created_at'].dt.strftime('%Y-%m-%d %H:%M')
+        tweets_df['timestamp'] = tweets_df['created_at'].dt.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         tweets_df.to_json(f"{log_path}/{timestamp}.json", orient="records", lines=True)
 
