@@ -1,1 +1,1 @@
-(from:elespectador OR from:ELTIEMPO OR from:AP_Noticias OR from:NoticiasUno OR from:larepublica_co OR from:dw_espanol)  -is:retweet lang:es
+(from:elespectador OR from:ELTIEMPO OR from:NoticiasCaracol OR from:NoticiasUno OR from:larepublica_co OR from:BluRadioCo OR from:WRadioColombia OR from:ElNuevoSiglo OR from:vanguardiacom OR from:lapatriacom OR from:elcolombiano OR from:elPaiscali OR from:RevistaSemana) -is:retweet lang:es
