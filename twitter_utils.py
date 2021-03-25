@@ -30,8 +30,6 @@ class TwitterUtils:
         response = requests.request("GET", url, headers=self.headers, data=payload)
 
         results = json.loads(response.text.encode('utf8'))
-        with open('tweets.json', 'w') as outfile:
-            json.dump(results, outfile)
 
         if "data" in results:
             for tweet in results['data']:
@@ -41,6 +39,9 @@ class TwitterUtils:
             return results["meta"]['next_token'], results["meta"]["newest_id"]
         else:
             return None
+
+    def to_df(self):
+        return pd.DataFrame(self.records)
 
     def save(self, log_path, timestamp):
         tweets_df = pd.DataFrame(self.records)
